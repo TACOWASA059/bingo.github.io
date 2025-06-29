@@ -118,10 +118,46 @@
         cell.addEventListener("click", () => {
           cell.classList.toggle("checked");
           updateBingoLines();
+          saveCheckedState();
         });
       }
       table.appendChild(row);
     }
+
+    window.addEventListener("load", () => {
+      loadCheckedState();
+      updateBingoLines();
+    });
+    window.addEventListener("resize", updateBingoLines);
+
+    function saveCheckedState() {
+      const checked = [];
+      for (let i = 0; i < 5; i++) {
+        checked[i] = [];
+        for (let j = 0; j < 5; j++) {
+          checked[i][j] = cells[i][j].classList.contains("checked");
+        }
+      }
+      localStorage.setItem("bingoChecked", JSON.stringify(checked));
+    }
+
+    function loadCheckedState() {
+      const saved = localStorage.getItem("bingoChecked");
+      if (!saved) return;
+
+      const checked = JSON.parse(saved);
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+          if (checked[i][j]) {
+            cells[i][j].classList.add("checked");
+          } else {
+            cells[i][j].classList.remove("checked");
+          }
+        }
+      }
+    }
+
+
 
     function updateBingoLines() {
       const rect = table.getBoundingClientRect();
@@ -178,47 +214,44 @@
       ctx.stroke();
     }
 
-    window.addEventListener("load", updateBingoLines);
-    window.addEventListener("resize", updateBingoLines);
-
     function isClipboardImageSupported() {
-    return (
-      navigator.clipboard &&
-      typeof ClipboardItem !== "undefined" &&
-      typeof navigator.clipboard.write === "function"
-    );
-  }
+      return (
+        navigator.clipboard &&
+        typeof ClipboardItem !== "undefined" &&
+        typeof navigator.clipboard.write === "function"
+      );
+    }
 
-  function isIOS() {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent);
-  }
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    }
 
-  function copyBingoImage() {
-    const container = document.querySelector(".board-container");
-    html2canvas(container).then(canvas => {
-      canvas.toBlob(blob => {
-        if (isClipboardImageSupported() && !isIOS()) {
-          // 画像コピーに対応している場合（主にPCのChrome, Edge）
-          const item = new ClipboardItem({ "image/png": blob });
-          navigator.clipboard.write([item]).then(() => {
-            alert("画像をクリップボードにコピーしました！");
-          }).catch(err => {
-            alert("コピーに失敗しました: " + err);
-          });
-        } else {
-          // 対応していない場合は自動で画像を保存させる
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "bingo.png";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      }, "image/png");
-    });
-  }
+    function copyBingoImage() {
+      const container = document.querySelector(".board-container");
+      html2canvas(container).then(canvas => {
+        canvas.toBlob(blob => {
+          if (isClipboardImageSupported() && !isIOS()) {
+            // 画像コピーに対応している場合（主にPCのChrome, Edge）
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(() => {
+              alert("画像をクリップボードにコピーしました！");
+            }).catch(err => {
+              alert("コピーに失敗しました: " + err);
+            });
+          } else {
+            // 対応していない場合は自動で画像を保存させる
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "bingo.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        }, "image/png");
+      });
+    }
   </script>
 </body>
 </html>

@@ -107,6 +107,7 @@
         if (i === 2 && j === 2) {
           // 中央マスだけは画像なので innerHTML を使う
           cell.innerHTML = bingoData[i][j];
+          cell.classList.toggle("checked");
         } else {
           // 他のマスはテキスト処理
           const safeText = bingoData[i][j].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
@@ -180,22 +181,44 @@
     window.addEventListener("load", updateBingoLines);
     window.addEventListener("resize", updateBingoLines);
 
-    function copyBingoImage() {
-      const container = document.querySelector(".board-container");
-      html2canvas(container).then(canvas => {
-        canvas.toBlob(blob => {
-          if (!navigator.clipboard) {
-            alert("このブラウザは画像のコピーに対応していません。");
-            return;
-          }
+    function isClipboardImageSupported() {
+    return (
+      navigator.clipboard &&
+      typeof ClipboardItem !== "undefined" &&
+      typeof navigator.clipboard.write === "function"
+    );
+  }
+
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }
+
+  function copyBingoImage() {
+    const container = document.querySelector(".board-container");
+    html2canvas(container).then(canvas => {
+      canvas.toBlob(blob => {
+        if (isClipboardImageSupported() && !isIOS()) {
+          // 画像コピーに対応している場合（主にPCのChrome, Edge）
           const item = new ClipboardItem({ "image/png": blob });
           navigator.clipboard.write([item]).then(() => {
-          }, err => {
+            alert("画像をクリップボードにコピーしました！");
+          }).catch(err => {
             alert("コピーに失敗しました: " + err);
           });
-        }, "image/png");
-      });
-    }
+        } else {
+          // 対応していない場合は自動で画像を保存させる
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "bingo.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      }, "image/png");
+    });
+  }
   </script>
 </body>
 </html>
